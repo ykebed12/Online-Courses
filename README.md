@@ -1,5 +1,5 @@
-## Online-Courses
+# Online-Courses
 
-# CS50 Intro to Artificial Intelligence
+## CS50 Intro to Artificial Intelligence
 
-# CS50x Android
+## CS50x Android
