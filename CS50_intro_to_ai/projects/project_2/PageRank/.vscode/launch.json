@@ -1,0 +1,13 @@
+{
+   
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: pagerank.py",
+            "type": "python",
+            "request": "launch",
+            "program": "pagerank.py",
+            "args": ["corpus2"]
+        }
+    ]
+}

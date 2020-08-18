@@ -2,7 +2,7 @@ import pomegranate
 
 from collections import Counter
 
-from bayes_network_practice import model
+from model import model
 
 def generate_sample():
 

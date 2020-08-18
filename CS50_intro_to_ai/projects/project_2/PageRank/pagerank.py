@@ -24,8 +24,8 @@ def main():
 def crawl(directory):
     """
     Parse a directory of HTML pages and check for links to other pages.
-    Return a dictionary where each key is a page, and values are
-    a list of all other pages in the corpus that are linked to by the page.
+    Return a dictionary where each key is a page, and values are a list of
+    all other pages in the corpus that are linked to by the page.
     """
     pages = dict()
 
@@ -35,7 +35,8 @@ def crawl(directory):
             continue
         with open(os.path.join(directory, filename)) as f:
             contents = f.read()
-            links = re.findall(r"<a\s+(?:[^>]*?)href=\"([^\"]*)\"", contents)
+            links = re.findall(r"<a\s+(?:[^>]*?)href=\"([^\"]*)\"",
+                               contents)
             pages[filename] = set(links) - {filename}
 
     # Only include links to other pages in the corpus
@@ -57,7 +58,17 @@ def transition_model(corpus, page, damping_factor):
     linked to by `page`. With probability `1 - damping_factor`, choose
     a link at random chosen from all pages in the corpus.
     """
-    raise NotImplementedError
+    N = len(corpus)
+    links = corpus.get(page)
+    links_size = len(links)
+    distribution = {k: 0 for k in corpus}
+
+    for page_key in corpus:
+        distribution[page_key] += (1-damping_factor)/N
+        if page_key is not page and page_key in links:
+            distribution[page_key] += damping_factor / links_size
+
+    return distribution
 
 
 def sample_pagerank(corpus, damping_factor, n):
@@ -69,7 +80,22 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    distribution = {k: 0 for k in corpus}
+
+    # pick the first page then update the distribution and transition_dict
+    page = random.choice(list(corpus))
+    distribution[page] = 1/n
+    transition_dict = transition_model(corpus, page, damping_factor)
+    
+    # update the distribution for each newly generated sample
+    for _ in range(n-1):
+        page = random.choices(list(transition_dict.keys()), 
+                              weights=list(transition_dict.values()),
+                              k=1).pop()
+        distribution[page] += 1/n
+        transition_dict = transition_model(corpus, page, damping_factor)
+
+    return distribution
 
 
 def iterate_pagerank(corpus, damping_factor):
@@ -81,7 +107,48 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    N = len(corpus.keys()) # number pages in corpus
+    C = ((1-damping_factor) / N) # constant in the equation
+
+    distribution = {} # current interation
+    next_distribution = {} # next iteration
+    update_dist = {}
+    
+    # create incoming_links and first iteration distribution dictionary
+    incoming_links = {k: set() for k in corpus.keys()}
+    for page in corpus:
+        distribution[page] = 1/N
+        update_dist[page] = False
+
+        # if the page has no links, update corpus to include all the 
+        # possible links
+        if not corpus[page]:
+            corpus[page] = set(corpus.keys())
+
+        # update incoming_links dictionary
+        for linked_page in corpus[page]:
+            incoming_links[linked_page].add(page)
+
+
+    while not all(update_dist.values()):
+        # create new iteration for each page
+        for page in corpus:
+
+            # start of rank equation
+            rank_val = C 
+            # summation part of the equation
+            for i in incoming_links[page]:
+                rank_val += (damping_factor * distribution[i] / len(corpus[i]))
+
+            next_distribution[page] = rank_val
+            
+            update_dist[page] =  abs(rank_val - distribution[page]) <= 0.001
+        
+        # switch distributions to reuse previous iteration dictionary
+        distribution, next_distribution = next_distribution, distribution
+
+    
+    return next_distribution
 
 
 if __name__ == "__main__":
